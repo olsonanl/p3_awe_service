@@ -1,0 +1,102 @@
+#!/usr/bin/python
+
+import urllib2, json
+import os
+import pprint
+import datetime
+
+thresh=2*3600
+ignorebeyond=3600*24*5
+
+# Read token
+f=open("/etc/check_mk/awetoken")
+token=f.readline()
+f.close()
+
+cts={'suspend':0,
+	'in-progress':0,
+	'completed':0,
+	'failing':0,
+	'deleted':0,
+	'queued':0}
+
+warning={'suspend':20,
+	'in-progress':20,
+	'completed':10000,
+	'failing':20,
+	'deleted':10000,
+	'queued':100}
+
+error={'suspend':200,
+	'in-progress':200,
+	'completed':20000,
+	'failing':40,
+	'deleted':20000,
+	'queued':200}
+
+# SLURPPPPP
+url = "http://localhost:8001/job?query&limit=1000" #?query&state=in-progress"
+req = urllib2.Request(url)
+req.add_header('Authorization','OAuth '+token)
+resp = urllib2.urlopen(req)
+
+data = json.loads(resp.read())
+
+pp = pprint.PrettyPrinter(indent=4)
+#pp.pprint(data['data'])
+
+statustxt=dict()
+cts['failing']=0
+list=[]
+
+# Walk the data
+#
+for d in data['data']:
+   info=d['info']
+   now=datetime.datetime.now()
+   # Let's not fail on a bad time stamp
+   try:
+     dt=datetime.datetime.strptime(info['startedtime'].split('.')[0].split('Z')[0], "%Y-%m-%dT%H:%M:%S")
+   except:
+     #print info['startedtime']
+     continue 
+   seconds=int((now-dt).days * 86400 + (now-dt).seconds)
+   if seconds>ignorebeyond:
+     continue 
+   # Truncate the name some
+   name=info['name'].replace('App wrapper for method ','')
+   state=d['state']
+   if state in cts:
+     cts[state]=cts[state]+1
+   else:
+     cts[state]=0
+     statustxt[state]=state
+   if seconds>thresh:
+     continue
+   if d['state']=='completed' or d['state']=='deleted':
+     continue
+   if d['lastfailed']!='':
+     cts['failing']=cts['failing']+1
+   list.append( "%s(%s,%d)"%(name,info['user'],d['resumed']))
+   #pp.pprint(d)
+
+#pp.pprint(cts)
+for state in cts:
+  statustxt[state]="%s - %d jobs"%(state,cts[state])
+statustxt['failing']=statustxt['failing']+', '.join(list)
+
+#3685
+
+for state in cts:
+  nstate=0
+  statetxt='OK'
+  if (cts[state]>error[state]):
+    nstate=2
+    statetxt='ERROR'
+  elif (cts[state]>warning[state]):
+    nstate=1
+    statetxt='WARN'
+   
+  print "%d AWE_%s %s=%d;%d;%d;0; %s - %s"%(nstate,state,state,cts[state],100,200,statetxt,statustxt[state])
+#print "%d Docker_memory count=%d;%d;%d;0;10 %s - %d instances: %s"%(statusmem,ctmem,0,5,statusmemtxt,ctmem,','.join(list))
+

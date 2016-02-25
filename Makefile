@@ -73,7 +73,12 @@ TPAGE_ARGS = --define kb_top=$(TARGET) \
     --define globus_profile_url=$(GLOBUS_PROFILE_URL) \
     --define client_auth_required=$(CLIENT_AUTH_REQUIRED) \
     --define admin_list=$(ADMIN_LIST) \
-    --define n_awe_clients=$(N_AWE_CLIENTS)
+    --define n_awe_clients=$(N_AWE_CLIENTS) \
+    --define max_work_failure=$(MAX_WORK_FAILURE) \
+    --define max_client_failure=$(MAX_CLIENT_FAILURE) \
+    --define awe_path_prefix=$(AWE_PATH_PREFIX) \
+    --define awe_path_suffix=$(AWE_PATH_SUFFIX) \
+    --define append_service_bins=$(APPEND_SERVICE_BINS)
 
 
 all: initialize build-awe |
@@ -130,7 +135,8 @@ deploy-awe-server: all build-dirs build-awe
 	cp $(BIN_DIR)/awe-server $(TARGET)/bin
 	$(TPAGE) $(TPAGE_ARGS) awe_server.cfg.tt > awe.cfg
 	$(TPAGE) $(TPAGE_ARGS) AWE/site/js/config.js.tt > AWE/site/js/config.js
-	cp -v -r AWE/site $(AWE_DIR)/site
+	rsync -arv --exclude=.git AWE/site $(AWE_DIR)/.
+	#cp -v -r AWE/site $(AWE_DIR)/site
 	mkdir -p $(BIN_DIR) $(SERVICE_DIR) $(SERVICE_DIR)/conf $(SERVICE_DIR)/logs/awe $(SERVICE_DIR)/data/temp
 	cp -v awe.cfg $(SERVICE_DIR)/conf/awe.cfg
 	cp -r AWE/templates/awf_templates/* $(AWE_DIR)/awfs/

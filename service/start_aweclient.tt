@@ -7,6 +7,18 @@ export KB_SERVICE_DIR=$KB_TOP/services/[% kb_service_dir %]
 export KB_DEPLOYMENT_CONFIG=$KB_TOP/deployment.cfg
 export R_LIBS=$KB_TOP/lib
 
+[% IF awe_path_prefix -%]
+export PATH=[% awe_path_prefix %]:$PATH
+[% END -%]
+[% IF awe_path_suffix -%]
+export PATH=$PATH:[% awe_path_suffix %]
+[% END -%]
+[% IF append_service_bins -%]
+[% FOREACH svc IN append_service_bins.split(',') -%]
+export PATH=$PATH:$KB_TOP/services/[% svc %]/bin
+[% END -%]
+[% END -%]
+
 if [ $# -gt 0 ] ; then
 	suffix=-$1
 	id=$1

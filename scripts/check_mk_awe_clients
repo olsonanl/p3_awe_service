@@ -1,0 +1,70 @@
+#!/usr/bin/python
+
+import urllib2, json
+import os
+import pprint
+import datetime
+from collections import defaultdict
+
+status_file = '/var/log/check_mk/aweclients_status'
+thresh=2*3600
+ignorebeyond=3600*24*5
+
+# normal settings
+#warning={'njs':25,
+#	'prod':8}
+#critical={'njs':20,
+#	'prod':6}
+# for use after PDU outage, only 10 workers available)
+warning={'njs':14,
+	'prod':8}
+critical={'njs':10,
+	'prod':6}
+
+# Read token
+f=open("/etc/check_mk/awetoken")
+token=f.readline()
+f.close()
+
+# SLURPPPPP
+url = "http://localhost:8001/client" #?query&state=in-progress"
+req = urllib2.Request(url)
+req.add_header('Authorization','OAuth '+token)
+resp = urllib2.urlopen(req)
+
+data = json.loads(resp.read())
+
+pp = pprint.PrettyPrinter(indent=4)
+#pp.pprint(data['data'])
+
+client_status = open(status_file,'w')
+cts=defaultdict(int);
+for d in data['data']:
+  status=d['Status']
+  nstate=1
+  statetxt='WARN'
+  if status=='active-idle' or status=='active-busy':
+    nstate=0
+    statetxt='OK'
+    cts[d['group']]+=1
+  print >> client_status, "%d AWE_%s - %s - %s is in state %s" % (nstate,d['host'],statetxt,d['host'],d['Status'])
+
+client_status.close()
+
+for group in cts:
+   ct=cts[group]
+   if group not in warning:
+     continue
+   nstate=0
+   statetxt='OK'
+   if (ct<critical[group]):
+     nstate=2
+     statetxt='ERROR'
+   elif (ct<warning[group]):
+     nstate=1
+     statetxt='WARN'
+   print "%d AWE_%s %s=%d;%d;%d;0; %s - %s"%(nstate,group,group,ct,warning[group],critical[group],statetxt,group)
+   
+#  print "%d AWE_%s %s=%d;%d;%d;0; %s - %s"%(nstate,state,state,cts[state],100,200,statetxt,statustxt[state])
+#print "%d Docker_memory count=%d;%d;%d;0;10 %s - %d instances: %s"%(statusmem,ctmem,0,5,statusmemtxt,ctmem,','.join(list))
+
