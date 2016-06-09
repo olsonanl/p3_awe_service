@@ -23,14 +23,19 @@ if [ $# -gt 0 ] ; then
 	suffix=-$1
 	id=$1
 	AWEC_CONFIG=[% kb_top %]/services/awe_service/conf/awec.$id.cfg
+	clientgroup=$id
 else
 	id=
 	suffix=
 	AWEC_CONFIG=[% kb_top %]/services/awe_service/conf/awec.cfg
+	# this is broken, but we don't usually run awe clients like this
+	clientgroup=default
 fi
 
 PID_FILE=[% kb_top %]/services/awe_service/client$suffix.pid
 AWE_DIR=[% kb_top %]/services/awe_service
+
+export AWE_CLIENTGROUP=$clientgroup
 
 [% kb_runtime %]/sbin/daemonize -v -o $AWE_DIR/awec-start$suffix.log -e $AWE_DIR/awec-start$suffix.log -p $PID_FILE \
 	[% kb_top %]/bin/awe-client -conf $AWEC_CONFIG
