@@ -6,20 +6,20 @@ import pprint
 import datetime
 from collections import defaultdict
 
-status_file = '/usr/share/nginx/www/aweclients_status'
+status_file = '/var/log/check_mk/aweclients_status'
 thresh=2*3600
 ignorebeyond=3600*24*5
 
 # normal settings
-warning={'njs':25,
-	'prod':8}
-critical={'njs':20,
-	'prod':6}
-# for use after PDU outage, fewer workers available)
-#warning={'njs':12,
+#warning={'njs':25,
 #	'prod':8}
-#critical={'njs':10,
+#critical={'njs':20,
 #	'prod':6}
+# for use after PDU outage, only 10 workers available)
+warning={'njs':14,
+	'prod':8}
+critical={'njs':10,
+	'prod':6}
 
 # Read token
 f=open("/etc/check_mk/awetoken")
@@ -47,7 +47,7 @@ for d in data['data']:
     nstate=0
     statetxt='OK'
     cts[d['group']]+=1
-  print >> client_status, "%d AWE_%s - %s - %s %s is in state %s" % (nstate,d['host'],statetxt,d['id'],d['host'],d['Status'])
+  print >> client_status, "%d AWE_%s - %s - %s is in state %s" % (nstate,d['host'],statetxt,d['host'],d['Status'])
 
 client_status.close()
 
@@ -63,7 +63,7 @@ for group in cts:
    elif (ct<warning[group]):
      nstate=1
      statetxt='WARN'
-   print "%d AWE_%s %s=%d;%d;%d;0; %s - %s has %d active workers"%(nstate,group,group,ct,warning[group],critical[group],statetxt,group,ct)
+   print "%d AWE_%s %s=%d;%d;%d;0; %s - %s"%(nstate,group,group,ct,warning[group],critical[group],statetxt,group)
    
 #  print "%d AWE_%s %s=%d;%d;%d;0; %s - %s"%(nstate,state,state,cts[state],100,200,statetxt,statustxt[state])
 #print "%d Docker_memory count=%d;%d;%d;0;10 %s - %d instances: %s"%(statusmem,ctmem,0,5,statusmemtxt,ctmem,','.join(list))
