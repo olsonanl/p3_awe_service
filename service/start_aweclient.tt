@@ -35,7 +35,10 @@ fi
 PID_FILE=[% kb_top %]/services/awe_service/client$suffix.pid
 AWE_DIR=[% kb_top %]/services/awe_service
 
+# export variables so njs_wrapper script can report on console log
 export AWE_CLIENTGROUP=$clientgroup
+AWE_CLIENTNAME=$(grep ^name $AWEC_CONFIG | perl -F'=' -ane 'print $F[1]')
+export AWE_CLIENTNAME
 
 [% kb_runtime %]/sbin/daemonize -v -o $AWE_DIR/awec-start$suffix.log -e $AWE_DIR/awec-start$suffix.log -p $PID_FILE \
 	[% kb_top %]/bin/awe-client -conf $AWEC_CONFIG
