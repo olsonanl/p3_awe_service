@@ -4,8 +4,9 @@ DEPLOY_RUNTIME ?= /kb/runtime
 SERVICE = awe_service
 SERVICE_DIR = $(TARGET)/services/$(SERVICE)
 
+AWE_RELEASE_URL = https://github.com/MG-RAST/AWE/releases/download/v0.9.36
+
 SERVER_URL = http://localhost:8000
-GO_TMP_DIR = /tmp/go_build.tmp
 CLIENT_GROUP = kbase
 CLIENT_NAME = $(CLIENT_GROUP)-client
 APP_LIST = '*'
@@ -81,7 +82,7 @@ TPAGE_ARGS = --define kb_top=$(TARGET) \
     --define append_service_bins=$(APPEND_SERVICE_BINS)
 
 
-all: initialize build-awe |
+all: build-awe |
 
 include $(TOP_DIR)/tools/Makefile.common
 include $(TOP_DIR)/tools/Makefile.common.rules
@@ -97,21 +98,23 @@ clean:
 	-rm -rf $(AWE_DIR)
 
 
-build-awe: $(BIN_DIR)/awe-server
+build-awe:  $(BIN_DIR)/awe-server $(BIN_DIR)/awe-client
 
-build-update: update build-awe |
+download/awe-server:
+	mkdir -p download
+	curl -o $@ -L $(AWE_RELEASE_URL)/`basename $@`
+	chmod +x $@
 
-$(BIN_DIR)/awe-server: AWE/awe-server/awe-server.go
-	rm -rf $(GO_TMP_DIR)
-	mkdir -p $(GO_TMP_DIR)/src/github.com/MG-RAST
-	cp -r AWE $(GO_TMP_DIR)/src/github.com/MG-RAST/
-	mkdir -p $(GO_TMP_DIR)/src/github.com/docker
-	wget -O $(GO_TMP_DIR)/src/github.com/docker/docker.zip https://github.com/docker/docker/archive/v1.6.1.zip
-	unzip -d $(GO_TMP_DIR)/src/github.com/docker $(GO_TMP_DIR)/src/github.com/docker/docker.zip
-	mv -v $(GO_TMP_DIR)/src/github.com/docker/docker-1.6.1 $(GO_TMP_DIR)/src/github.com/docker/docker
-	export GOPATH=$(GO_TMP_DIR); go get -v github.com/MG-RAST/AWE/...
-	cp -v $(GO_TMP_DIR)/bin/awe-server $(BIN_DIR)/awe-server
-	cp -v $(GO_TMP_DIR)/bin/awe-client $(BIN_DIR)/awe-client
+download/awe-client:
+	mkdir -p download
+	curl -o $@ -L $(AWE_RELEASE_URL)/`basename $@`
+	chmod +x $@
+
+$(BIN_DIR)/awe-server: download/awe-server
+	cp -p $^ $@
+
+$(BIN_DIR)/awe-client: download/awe-client
+	cp -p $^ $@
 
 build-libs:
 	-mkdir -p lib/Bio/KBase/AWE
@@ -169,13 +172,6 @@ deploy-awe-client: all build-dirs build-awe
 deploy-upstart:
 	$(TPAGE) $(TPAGE_ARGS) init/awe.conf.tt > /etc/init/awe.conf
 	$(TPAGE) $(TPAGE_ARGS) init/awe-client.conf.tt > /etc/init/awe-client.conf
-
-initialize:
-	git submodule init
-	git submodule update --init --recursive
-
-update:
-	cd AWE; git pull origin master
 
 deploy-utils: SRC_PERL = $(wildcard AWE/utils/*.pl)
 deploy-utils: deploy-scripts
