@@ -1,8 +1,29 @@
 #!/bin/bash
 
-AWE_DIR=[% kb_top %]/services/awe_service
-PID_FILE=$AWE_DIR/service.pid
-AWE_CONFIG=[% kb_top %]/services/awe_service/conf/awe.cfg
+export KB_TOP=[% kb_top %]
+export KB_RUNTIME=[% kb_runtime %]
+export PATH=$KB_TOP/bin:$KB_RUNTIME/bin:$PATH
+export PERL5LIB=$KB_TOP/lib
+export KB_SERVICE_DIR=$KB_TOP/services/[% kb_service_dir %]
+export KB_DEPLOYMENT_CONFIG=$KB_TOP/deployment.cfg
+export R_LIBS=$KB_TOP/lib
 
-echo "[% kb_runtime %]/sbin/daemonize -v -o $AWE_DIR/awes-start.log -e $AWE_DIR/awes-start.log -p $PID_FILE [% kb_top %]/bin/awe-server -conf $AWE_CONFIG"
-[% kb_runtime %]/sbin/daemonize -v -o $AWE_DIR/awes-start.log -e $AWE_DIR/awes-start.log -p $PID_FILE [% kb_top %]/bin/awe-server -conf $AWE_CONFIG
+log_dir=[% server_logs_dir %]
+mkdir -p $log_dir
+
+pid_file=$log_dir/service.pid
+
+awe_config=$KB_SERVICE_DIR/conf/awe.cfg
+
+if [ ! -f $awe_config ] ; then
+    echo  "Missing awe config $awe_config" 1>&2
+    exit 1
+fi
+
+[% kb_runtime %]/sbin/daemonize \
+    -v -a \
+    -c $log_dir \
+    -o $log_dir/awes-start.log \
+    -e $log_dir/awes-start.err \
+    -p $pid_file \
+    [% kb_top %]/bin/awe-server -conf $awe_config

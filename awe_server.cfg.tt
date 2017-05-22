@@ -24,7 +24,7 @@ client_auth_required=[% client_auth_required %]
 # See documentation for details of deploying Shock
 site=[% site_dir %]
 data=[% data_dir %]
-logs=[% logs_dir %]
+logs=[% server_logs_dir %]
 awf=[% awfs_dir %]
 
 [External]
@@ -35,7 +35,7 @@ api-url=[% api_url %]
 # Mongodb configuration:
 # Hostnames and ports hosts=host1[,host2:port,...,hostN]
 hosts=[% mongo_host %]
-database=AWEDB
+database=[% mongo_db %]
 user=
 password=
 timeout=[% mongo_timeout %]

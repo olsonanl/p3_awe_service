@@ -5,6 +5,9 @@ logs=[% logs_dir %]
 [Args]
 debuglevel=0
 
+[P3]
+client_count = [% client_count %]
+
 [Client]
 workpath=[% work_dir %]
 supported_apps=[% supported_apps %]

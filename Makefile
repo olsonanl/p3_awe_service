@@ -1,54 +1,33 @@
 TOP_DIR = ../..
 TARGET ?= /kb/deployment
 DEPLOY_RUNTIME ?= /kb/runtime
-SERVICE = awe_service
+SERVICE = p3_awe_service
 SERVICE_DIR = $(TARGET)/services/$(SERVICE)
 
-AWE_RELEASE_URL = https://github.com/MG-RAST/AWE/releases/download/v0.9.36
+AUTO_DEPLOY_CONFIG ?= deploy.cfg
 
-SERVER_URL = http://localhost:8000
-CLIENT_GROUP = kbase
-CLIENT_NAME = $(CLIENT_GROUP)-client
-APP_LIST = '*'
-PRODUCTION = 0
+AWE_REPO = https://github.com/MG-RAST/AWE
+AWE_RELEASE_VERSION = v0.9.43
+AWE_RELEASE_URL = $(AWE_REPO)/releases/download/v0.9.43
+
+SERVER_SITE_PORT=8001
+SERVER_API_PORT=8000
+SERVER_URL = http://localhost:$(SERVER_API_PORT)
 
 MONGO_HOST = localhost
 MONGO_TIMEOUT = 1200
-MONGO_DB = AWEDB
-AWE_DIR = /mnt/awe
+MONGO_DB = AWEDB_dev
+AWE_DIR = $(shell pwd)/awe-install
 ADMIN_LIST = 
-
-N_AWE_CLIENTS=1
 
 GLOBUS_TOKEN_URL = https://nexus.api.globusonline.org/goauth/token?grant_type=client_credentials
 GLOBUS_PROFILE_URL = https://nexus.api.globusonline.org/users
 CLIENT_AUTH_REQUIRED = false
 
-ifeq ($(PRODUCTION), 1)
-
-    AWE_DIR = /disk0/awe
-	
-    SERVER_SITE_URL = https://kbase.us/services/awe
-    SERVER_URL = https://kbase.us/services/awe-api
-    SERVER_API_PORT = 7107
-    SERVER_SITE_PORT = 7106
-
-else
-
-    APP_LIST = $(shell ls $(TARGET)/bin | perl -e '@a = <>; chomp @a; print join(",", @a)')
-    SERVER_URL =
-    SERVER_SITE_URL =
-
-    ifneq ($(SERVER_URL),)
-    SERVER_API_PORT = $(shell perl -MURI -e "print URI->new('$(SERVER_URL)')->port")
-    endif
-
-    ifneq ($(SERVER_SITE_URL),)
-    SERVER_SITE_PORT = $(shell perl -MURI -e "print URI->new('$(SERVER_SITE_URL)')->port")
-    endif
-
-
-endif
+GROUPS = P3_SLEEP
+GROUP.P3_SLEEP.NAME = P3-Sleep
+GROUP.P3_SLEEP.APPS = App-Sleep
+GROUP.P3_SLEEP.CLIENT_COUNT = 4
 
 TPAGE_ARGS = --define kb_top=$(TARGET) \
     --define kb_runtime=$(DEPLOY_RUNTIME) \
@@ -60,21 +39,18 @@ TPAGE_ARGS = --define kb_top=$(TARGET) \
     --define api_port=$(SERVER_API_PORT) \
     --define site_dir=$(AWE_DIR)/site \
     --define data_dir=$(AWE_DIR)/data \
-    --define logs_dir=$(AWE_DIR)/logs \
+    --define client_logs_dir=$(AWE_DIR)/logs/client \
+    --define server_logs_dir=$(AWE_DIR)/logs \
     --define awfs_dir=$(AWE_DIR)/awfs \
     --define mongo_host=$(MONGO_HOST) \
     --define mongo_timeout=$(MONGO_TIMEOUT) \
     --define mongo_db=$(MONGO_DB) \
     --define work_dir=$(AWE_DIR)/work \
     --define server_url=$(SERVER_URL) \
-    --define client_group=$(CLIENT_GROUP) \
-    --define client_name=$(CLIENT_NAME) \
-    --define supported_apps=$(APP_LIST) \
     --define globus_token_url=$(GLOBUS_TOKEN_URL) \
     --define globus_profile_url=$(GLOBUS_PROFILE_URL) \
     --define client_auth_required=$(CLIENT_AUTH_REQUIRED) \
     --define admin_list=$(ADMIN_LIST) \
-    --define n_awe_clients=$(N_AWE_CLIENTS) \
     --define max_work_failure=$(MAX_WORK_FAILURE) \
     --define max_client_failure=$(MAX_CLIENT_FAILURE) \
     --define awe_path_prefix=$(AWE_PATH_PREFIX) \
@@ -98,7 +74,12 @@ clean:
 	-rm -rf $(AWE_DIR)
 
 
-build-awe:  $(BIN_DIR)/awe-server $(BIN_DIR)/awe-client
+build-awe: checkout-code $(BIN_DIR)/awe-server $(BIN_DIR)/awe-client
+
+checkout-code:
+	if [ ! -d AWE ] ; then \
+		git clone -b $(AWE_RELEASE_VERSION) $(AWE_REPO) ; \
+	fi
 
 download/awe-server:
 	mkdir -p download
@@ -121,27 +102,29 @@ build-libs:
 	$(TPAGE) $(TPAGE_ARGS) Constants.pm.tt > lib/Bio/KBase/AWE/Constants.pm
 
 build-dirs:
-	mkdir -p $(BIN_DIR) $(SERVICE_DIR) $(SERVICE_DIR)/conf $(SERVICE_DIR)/logs/awe $(SERVICE_DIR)/data/temp
-	mkdir -p $(AWE_DIR)/data $(AWE_DIR)/logs $(AWE_DIR)/awfs $(AWE_DIR)/work
-	chmod 777 $(AWE_DIR)/data $(AWE_DIR)/logs $(AWE_DIR)/awfs $(AWE_DIR)/work
+	mkdir -p $(BIN_DIR) 
+	mkdir -p $(SERVICE_DIR) $(SERVICE_DIR)/conf $(SERVICE_DIR)/logs/awe $(SERVICE_DIR)/data/temp
+	mkdir -p $(AWE_DIR)/data $(AWE_DIR)/logs/client $(AWE_DIR)/awfs $(AWE_DIR)/work
+	chmod 777 $(AWE_DIR)/data $(AWE_DIR)/logs $(AWE_DIR)/logs/client $(AWE_DIR)/awfs $(AWE_DIR)/work
 
-deploy: deploy-service deploy-client deploy-utils deploy-libs deploy-awe-libs
+deploy: deploy-service deploy-client
 
 deploy-awe-libs:
 	rsync --exclude '*.bak' -arv AWE/utils/lib/. $(TARGET)/lib/.
 
-deploy-client: build-libs deploy-utils deploy-libs deploy-awe-libs
+deploy-client: build-libs deploy-binaries deploy-utils deploy-libs deploy-awe-libs deploy-awe-client
 
-deploy-service: build-libs deploy-awe-server deploy-awe-client deploy-libs deploy-awe-libs
+deploy-service: build-libs deploy-binaries deploy-libs deploy-awe-libs deploy-awe-server
 
-deploy-awe-server: all build-dirs build-awe
+deploy-binaries: build-awe 
 	cp $(BIN_DIR)/awe-server $(TARGET)/bin
-	$(TPAGE) $(TPAGE_ARGS) awe_server.cfg.tt > awe.cfg
+	cp $(BIN_DIR)/awe-client $(TARGET)/bin
+
+deploy-awe-server: 
+	$(TPAGE) $(TPAGE_ARGS) awe_server.cfg.tt > $(SERVICE_DIR)/conf/awe.cfg
 	$(TPAGE) $(TPAGE_ARGS) AWE/site/js/config.js.tt > AWE/site/js/config.js
 	rsync -arv --exclude=.git AWE/site $(AWE_DIR)/.
-	#cp -v -r AWE/site $(AWE_DIR)/site
-	mkdir -p $(BIN_DIR) $(SERVICE_DIR) $(SERVICE_DIR)/conf $(SERVICE_DIR)/logs/awe $(SERVICE_DIR)/data/temp
-	cp -v awe.cfg $(SERVICE_DIR)/conf/awe.cfg
+
 	cp -r AWE/templates/awf_templates/* $(AWE_DIR)/awfs/
 	$(TPAGE) $(TPAGE_ARGS) service/start_service.tt > service/start_service
 	$(TPAGE) $(TPAGE_ARGS) service/stop_service.tt > service/stop_service
@@ -150,21 +133,13 @@ deploy-awe-server: all build-dirs build-awe
 	cp service/stop_service $(SERVICE_DIR)/
 	chmod +x $(SERVICE_DIR)/stop_service
 
-deploy-awe-client: all build-dirs build-awe
-	cp $(BIN_DIR)/awe-client $(TARGET)/bin
-	id=1; while [ $$id -le $(N_AWE_CLIENTS) ] ; do \
-	    $(TPAGE) $(TPAGE_ARGS) --define client_index=$$id awe_client.cfg.tt > awec.$$id.cfg; \
-	    cp -v awec.$$id.cfg $(SERVICE_DIR)/conf/awec.$$id.cfg; \
-	    id=`expr $$id + 1`; \
+deploy-awe-client: 
+	perl build-client-configs.pl $(TPAGE_ARGS) $(AUTO_DEPLOY_CONFIG) $(SERVICE) $(SERVICE_DIR)/conf awec.%s.cfg
+	for cli in start_awe_client_group stop_awe_client_group; do \
+		$(TPAGE) $(TPAGE_ARGS) service/$$cli.tt > service/$$cli ; \
+		chmod +x service/$$cli; \
+		cp -p service/$$cli $(SERVICE_DIR)/ ; \
 	done
-	$(TPAGE) $(TPAGE_ARGS) awe_client.cfg.tt > awec.cfg
-	cp -v awec.cfg $(SERVICE_DIR)/conf/awec.cfg
-	$(TPAGE) $(TPAGE_ARGS) service/start_aweclient.tt > service/start_aweclient
-	$(TPAGE) $(TPAGE_ARGS) service/stop_aweclient.tt > service/stop_aweclient
-	cp service/start_aweclient $(SERVICE_DIR)/
-	chmod +x $(SERVICE_DIR)/start_aweclient
-	cp service/stop_aweclient $(SERVICE_DIR)/
-	chmod +x $(SERVICE_DIR)/stop_aweclient
 	$(TPAGE) $(TPAGE_ARGS) service/monitrc.tt > service/monitrc
 	cp service/monitrc $(SERVICE_DIR)/monitrc
 	chmod go-rwx $(SERVICE_DIR)/monitrc

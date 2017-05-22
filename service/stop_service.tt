@@ -1,12 +1,35 @@
 #!/bin/bash
 
-PID_FILE=[% kb_top %]/services/awe_service/service.pid
+export KB_TOP=[% kb_top %]
+export KB_RUNTIME=[% kb_runtime %]
+export PATH=$KB_TOP/bin:$KB_RUNTIME/bin:$PATH
+export PERL5LIB=$KB_TOP/lib
+export KB_SERVICE_DIR=$KB_TOP/services/[% kb_service_dir %]
+export KB_DEPLOYMENT_CONFIG=$KB_TOP/deployment.cfg
+export R_LIBS=$KB_TOP/lib
 
-if [ -f $PID_FILE ]; then
-    PID=`cat $PID_FILE`
-    echo "terminating process ID $PID"
-    kill -TERM -$PID
-    rm $PID_FILE
-else
-    echo "No pid file $PID_FILE found for awe service"
+log_dir=[% server_logs_dir %]
+
+pid_file=$log_dir/service.pid
+
+if [ -f $pid_file ] ; then
+    pid=`cat $pid_file`
+    tries=0
+    echo "Killing process $pid for awe server"
+    kill -TERM -$pid
+    sleep 1
+    kill -0 $pid
+    while [ $? -eq 0 -a $tries -lt 100 ]  ; do
+	echo "Waiting for $pid to complete"
+	pstree -p -a $pid
+	sleep 3
+	tries=`expr $tries + 1`
+	kill -0 $pid
+    done
+    kill -0 $pid
+    if [ $? -eq 0 ] ; then
+	kill -9 $pid
+    fi
 fi
+
+

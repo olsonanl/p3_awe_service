@@ -1,0 +1,86 @@
+#!/bin/bash
+export KB_TOP=[% kb_top %]
+export KB_RUNTIME=[% kb_runtime %]
+export PATH=$KB_TOP/bin:$KB_RUNTIME/bin:$PATH
+export PERL5LIB=$KB_TOP/lib
+export KB_SERVICE_DIR=$KB_TOP/services/[% kb_service_dir %]
+export KB_DEPLOYMENT_CONFIG=$KB_TOP/deployment.cfg
+export R_LIBS=$KB_TOP/lib
+
+[% IF awe_path_prefix -%]
+export PATH=[% awe_path_prefix %]:$PATH
+[% END -%]
+[% IF awe_path_suffix -%]
+export PATH=$PATH:[% awe_path_suffix %]
+[% END -%]
+[% IF append_service_bins -%]
+[% FOREACH svc IN append_service_bins.split(',') -%]
+export PATH=$PATH:$KB_TOP/services/[% svc %]/bin
+[% END -%]
+[% END -%]
+
+#
+# Usage: start_client_group group-name
+#
+
+if [ $# -ne 1 ] ; then
+	echo "Usage: $0 group-name" 1>&2
+	exit 1
+else
+	group_key=$1
+fi
+
+cfg=$KB_SERVICE_DIR/conf/awec.$group_key.cfg
+
+if [ ! -f $cfg ] ; then
+   echo "Missing configuration file $cfg for group $group_key" 1>&2 
+   exit 1
+fi
+
+#
+# Read the awe config to determine the client count and group name.
+#
+perlcmd='use Config::Simple; $c = Config::Simple->new; $c->read($ARGV[0]);  print $c->param($ARGV[1]), "\n"'
+
+num_clients=`$KB_RUNTIME/bin/perl -e "$perlcmd" $cfg P3.client_count`
+group_name=`$KB_RUNTIME/bin/perl -e "$perlcmd" $cfg Client.group`
+
+group_log_dir=[% client_logs_dir %]/$group_name
+
+for idx in `seq 1 $num_clients` ; do
+    idx2=`printf "%02d" $idx`
+    client_log_dir=$group_log_dir/$idx2
+    pid_file=$client_log_dir/client.pid
+
+    if [ -f $pid_file ] ; then
+       pid=`cat $pid_file`
+       echo "Killing $pid for $group_name client $idx2"
+       kill $pid
+    fi
+done
+sleep 1
+for idx in `seq 1 $num_clients` ; do
+    idx2=`printf "%02d" $idx`
+    client_log_dir=$group_log_dir/$idx2
+    pid_file=$client_log_dir/client.pid
+
+    if [ -f $pid_file ] ; then
+       pid=`cat $pid_file`
+
+       tries=0
+       kill -0 $pid
+       while [ $? -eq 0 -a $tries -lt 10 ]  ; do
+	   echo "Waiting for $pid to complete"
+	   pstree -p -a $pid
+           sleep 3
+	   tries=`expr $tries + 1`
+	   kill -0 $pid
+       done
+       kill -0 $pid
+       if [ $? -eq 0 ] ; then
+	   kill -9 $pid
+       fi
+    fi
+done
+
+

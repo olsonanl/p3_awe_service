@@ -1,0 +1,59 @@
+#!/bin/bash
+export KB_TOP=[% kb_top %]
+export KB_RUNTIME=[% kb_runtime %]
+export PATH=$KB_TOP/bin:$KB_RUNTIME/bin:$PATH
+export PERL5LIB=$KB_TOP/lib
+export KB_SERVICE_DIR=$KB_TOP/services/[% kb_service_dir %]
+export KB_DEPLOYMENT_CONFIG=$KB_TOP/deployment.cfg
+export R_LIBS=$KB_TOP/lib
+
+
+#
+# Usage: stop_client_group group-name
+#
+
+if [ $# -ne 1 ] ; then
+	echo "Usage: $0 group-name" 1>&2
+	exit 1
+else
+	group_key=$1
+fi
+
+cfg=$KB_SERVICE_DIR/conf/awec.$group_key.cfg
+
+if [ ! -f $cfg ] ; then
+   echo "Missing configuration file $cfg for group $group_key" 1>&2 
+   exit 1
+fi
+
+#
+# Read the awe config to determine the client count and group name.
+#
+perlcmd='use Config::Simple; $c = Config::Simple->new; $c->read($ARGV[0]);  print $c->param($ARGV[1]), "\n"'
+
+num_clients=`$KB_RUNTIME/bin/perl -e "$perlcmd" $cfg P3.client_count`
+group_name=`$KB_RUNTIME/bin/perl -e "$perlcmd" $cfg Client.group`
+
+group_log_dir=[% client_logs_dir %]/$group_name
+mkdir -p $group_log_dir
+
+hostname=`hostname`
+
+for idx in `seq 1 $num_clients` ; do
+    idx2=`printf "%02d" $idx`
+    client_log_dir=$group_log_dir/$idx2
+    mkdir -p $client_log_dir
+    pid_file=$client_log_dir/client.pid
+
+    [% kb_runtime %]/sbin/daemonize -v -a \
+       -c $client_log_dir \
+       -o $client_log_dir/awec-start.log \
+       -e $client_log_dir/awec-start.err \
+       -p $pid_file \
+       -l $client_log_dir/client.lock \
+	[% kb_top %]/bin/awe-client \
+	   -name "$group_name-$idx2" \
+	   -host $hostname \
+	   -logs $client_log_dir \
+	   -conf $cfg
+done
