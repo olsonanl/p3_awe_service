@@ -3,7 +3,7 @@ email=admin@host.com
 users=[% admin_list %]
 
 [Anonymous]
-# Controls weither an anonymous user can read/write
+# Controls whether an anonymous user can read/write
 # values: true/false
 read=true
 write=true
