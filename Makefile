@@ -121,6 +121,7 @@ deploy-binaries: build-awe
 	cp $(BIN_DIR)/awe-client $(TARGET)/bin
 
 deploy-awe-server: 
+	mkdir -p $(SERVICE_DIR)/conf
 	$(TPAGE) $(TPAGE_ARGS) awe_server.cfg.tt > $(SERVICE_DIR)/conf/awe.cfg
 	$(TPAGE) $(TPAGE_ARGS) AWE/site/js/config.js.tt > AWE/site/js/config.js
 	rsync -arv --exclude=.git AWE/site $(AWE_DIR)/.
@@ -134,6 +135,7 @@ deploy-awe-server:
 	chmod +x $(SERVICE_DIR)/stop_service
 
 deploy-awe-client: 
+	mkdir -p $(SERVICE_DIR)/conf
 	perl build-client-configs.pl $(TPAGE_ARGS) $(AUTO_DEPLOY_CONFIG) $(SERVICE) $(SERVICE_DIR)/conf awec.%s.cfg
 	for cli in start_awe_client_group stop_awe_client_group; do \
 		$(TPAGE) $(TPAGE_ARGS) service/$$cli.tt > service/$$cli ; \
