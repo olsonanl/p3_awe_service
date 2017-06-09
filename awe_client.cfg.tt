@@ -1,6 +1,6 @@
 [Directories]
 data=[% data_dir %]
-logs=[% logs_dir %]
+logs=[% client_logs_dir %]
 
 [Args]
 debuglevel=0
