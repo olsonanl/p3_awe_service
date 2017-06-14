@@ -20,6 +20,11 @@ MONGO_DB = AWEDB_dev
 AWE_DIR = $(shell pwd)/awe-install
 ADMIN_LIST = 
 
+#
+# We deploy static site assets into the service deployment directory.
+#
+AWE_SITE_DIR = $(SERVICE_DIR)/awe_site
+
 GLOBUS_TOKEN_URL = https://nexus.api.globusonline.org/goauth/token?grant_type=client_credentials
 GLOBUS_PROFILE_URL = https://nexus.api.globusonline.org/users
 CLIENT_AUTH_REQUIRED = false
@@ -37,11 +42,11 @@ TPAGE_ARGS = --define kb_top=$(TARGET) \
     --define api_url=$(SERVER_URL) \
     --define site_port=$(SERVER_SITE_PORT) \
     --define api_port=$(SERVER_API_PORT) \
-    --define site_dir=$(AWE_DIR)/site \
+    --define site_dir=$(AWE_SITE_DIR)/site \
     --define data_dir=$(AWE_DIR)/data \
     --define client_logs_dir=$(AWE_DIR)/logs/client \
     --define server_logs_dir=$(AWE_DIR)/logs \
-    --define awfs_dir=$(AWE_DIR)/awfs \
+    --define awfs_dir=$(AWE_SITE_DIR)/awfs \
     --define mongo_host=$(MONGO_HOST) \
     --define mongo_timeout=$(MONGO_TIMEOUT) \
     --define mongo_db=$(MONGO_DB) \
@@ -78,7 +83,7 @@ build-awe: checkout-code $(BIN_DIR)/awe-server $(BIN_DIR)/awe-client
 
 checkout-code:
 	if [ ! -d AWE ] ; then \
-		git clone -b $(AWE_RELEASE_VERSION) $(AWE_REPO) ; \
+		git clone --recursive -b $(AWE_RELEASE_VERSION) $(AWE_REPO) ; \
 	fi
 
 download/awe-server:
@@ -122,11 +127,14 @@ deploy-binaries: build-awe
 
 deploy-awe-server: 
 	mkdir -p $(SERVICE_DIR)/conf
+	mkdir -p $(AWE_SITE_DIR)/awfs
 	$(TPAGE) $(TPAGE_ARGS) awe_server.cfg.tt > $(SERVICE_DIR)/conf/awe.cfg
-	$(TPAGE) $(TPAGE_ARGS) AWE/site/js/config.js.tt > AWE/site/js/config.js
-	rsync -arv --exclude=.git AWE/site $(AWE_DIR)/.
+	# We deploy this into config.js.tt because the AWE server always
+	# tries to do an expansion. It doesn't do it properly for our purposes.
+	$(TPAGE) $(TPAGE_ARGS) config.js.tt > AWE/site/js/config.js.tt
+	rsync -arv --exclude=.git AWE/site $(AWE_SITE_DIR)/.
 
-	cp -r AWE/templates/awf_templates/* $(AWE_DIR)/awfs/
+	cp -r AWE/templates/awf_templates/* $(AWE_SITE_DIR)/awfs/
 	$(TPAGE) $(TPAGE_ARGS) service/start_service.tt > service/start_service
 	$(TPAGE) $(TPAGE_ARGS) service/stop_service.tt > service/stop_service
 	cp service/start_service $(SERVICE_DIR)/
