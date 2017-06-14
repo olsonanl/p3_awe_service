@@ -134,12 +134,15 @@ deploy-awe-server:
 	rsync -arv --exclude=.git AWE/site $(AWE_SITE_DIR)/.
 
 	cp -r AWE/templates/awf_templates/* $(AWE_SITE_DIR)/awfs/
-	$(TPAGE) $(TPAGE_ARGS) service/start_service.tt > service/start_service
-	$(TPAGE) $(TPAGE_ARGS) service/stop_service.tt > service/stop_service
-	cp service/start_service $(SERVICE_DIR)/
+	$(TPAGE) $(TPAGE_ARGS) service/start_service.tt > $(SERVICE_DIR)/start_service
+	$(TPAGE) $(TPAGE_ARGS) service/stop_service.tt > $(SERVICE_DIR)/stop_service
+	$(TPAGE) $(TPAGE_ARGS) service/postinstall.tt > $(SERVICE_DIR)/postinstall
 	chmod +x $(SERVICE_DIR)/start_service
-	cp service/stop_service $(SERVICE_DIR)/
 	chmod +x $(SERVICE_DIR)/stop_service
+	chmod +x $(SERVICE_DIR)/postinstall
+	mkdir -p $(TARGET)/postinstall
+	rm -f $(TARGET)/postinstall/$(SERVICE)
+	ln -s ../services/$(SERVICE)/postinstall $(TARGET)/postinstall/$(SERVICE)
 
 deploy-awe-client: 
 	mkdir -p $(SERVICE_DIR)/conf

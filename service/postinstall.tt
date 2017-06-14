@@ -1,0 +1,19 @@
+#!/bin/sh
+
+#
+# Postinstallation setup.
+#
+
+export KB_TOP=[% kb_top %]
+export KB_RUNTIME=[% kb_runtime %]
+export PATH=$KB_TOP/bin:$KB_RUNTIME/bin:$KB_TOP/services/[% kb_service_name %]/bin:$PATH
+export PERL5LIB=$KB_TOP/lib
+export KB_SERVICE_NAME="[% kb_service_name %]"
+export KB_DEPLOYMENT_CONFIG="$KB_TOP/deployment.cfg"
+
+mkdir -p [% site_dir %]
+mkdir -p [% server_logs_dir %]
+mkdir -p [% client_logs_dir %]
+mkdir -p [% work_dir %]
+mkdir -p [% data_dir %]
+
