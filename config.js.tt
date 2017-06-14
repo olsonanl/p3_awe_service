@@ -5,8 +5,8 @@
  * no macro expansions included.
  */
 var RetinaConfig = {
-    "awe_ip": "[% awe_url %]",
-    "workflow_ip": "[% awe_url %]/awf",
+    "awe_ip": "[% api_url %]",
+    "workflow_ip": "[% api_url %]/awf",
     "authResources": { "default": "KBase",
     		       "KBase": { "icon" : "KBase_favicon.ico",
 		       		  "keyword": "auth",
