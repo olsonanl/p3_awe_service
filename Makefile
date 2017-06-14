@@ -34,34 +34,33 @@ GROUP.P3_SLEEP.NAME = P3-Sleep
 GROUP.P3_SLEEP.APPS = App-Sleep
 GROUP.P3_SLEEP.CLIENT_COUNT = 4
 
-TPAGE_ARGS = --define kb_top=$(TARGET) \
-    --define kb_runtime=$(DEPLOY_RUNTIME) \
-    --define kb_service_dir=$(SERVICE) \
-    --define kb_service_name=$(SERVICE) \
-    --define site_url=$(SERVER_SITE_URL) \
-    --define api_url=$(SERVER_URL) \
-    --define site_port=$(SERVER_SITE_PORT) \
-    --define api_port=$(SERVER_API_PORT) \
-    --define site_dir=$(AWE_SITE_DIR)/site \
-    --define data_dir=$(AWE_DIR)/data \
-    --define client_logs_dir=$(AWE_DIR)/logs/client \
-    --define server_logs_dir=$(AWE_DIR)/logs \
-    --define awfs_dir=$(AWE_SITE_DIR)/awfs \
-    --define mongo_host=$(MONGO_HOST) \
-    --define mongo_timeout=$(MONGO_TIMEOUT) \
-    --define mongo_db=$(MONGO_DB) \
-    --define work_dir=$(AWE_DIR)/work \
-    --define server_url=$(SERVER_URL) \
-    --define globus_token_url=$(GLOBUS_TOKEN_URL) \
-    --define globus_profile_url=$(GLOBUS_PROFILE_URL) \
-    --define client_auth_required=$(CLIENT_AUTH_REQUIRED) \
-    --define admin_list=$(ADMIN_LIST) \
-    --define max_work_failure=$(MAX_WORK_FAILURE) \
-    --define max_client_failure=$(MAX_CLIENT_FAILURE) \
-    --define awe_path_prefix=$(AWE_PATH_PREFIX) \
-    --define awe_path_suffix=$(AWE_PATH_SUFFIX) \
-    --define append_service_bins=$(APPEND_SERVICE_BINS)
-
+TPAGE_ARGS = --define kb_top="$(TARGET)" \
+    --define kb_runtime="$(DEPLOY_RUNTIME)" \
+    --define kb_service_dir="$(SERVICE)" \
+    --define kb_service_name="$(SERVICE)" \
+    --define site_url="$(SERVER_SITE_URL)" \
+    --define api_url="$(SERVER_URL)" \
+    --define site_port="$(SERVER_SITE_PORT)" \
+    --define api_port="$(SERVER_API_PORT)" \
+    --define site_dir="$(AWE_SITE_DIR)/site" \
+    --define data_dir="$(AWE_DIR)/data" \
+    --define client_logs_dir="$(AWE_DIR)/logs/client" \
+    --define server_logs_dir="$(AWE_DIR)/logs" \
+    --define awfs_dir="$(AWE_SITE_DIR)/awfs" \
+    --define mongo_host="$(MONGO_HOST)" \
+    --define mongo_timeout="$(MONGO_TIMEOUT)" \
+    --define mongo_db="$(MONGO_DB)" \
+    --define work_dir="$(AWE_DIR)/work" \
+    --define server_url="$(SERVER_URL)" \
+    --define globus_token_url="$(GLOBUS_TOKEN_URL)" \
+    --define globus_profile_url="$(GLOBUS_PROFILE_URL)" \
+    --define client_auth_required="$(CLIENT_AUTH_REQUIRED)" \
+    --define admin_list="$(ADMIN_LIST)" \
+    --define max_work_failure="$(MAX_WORK_FAILURE)" \
+    --define max_client_failure="$(MAX_CLIENT_FAILURE)" \
+    --define awe_path_prefix="$(AWE_PATH_PREFIX)" \
+    --define awe_path_suffix="$(AWE_PATH_SUFFIX)" \
+    --define append_service_bins="$(APPEND_SERVICE_BINS)"
 
 all: build-awe |
 
