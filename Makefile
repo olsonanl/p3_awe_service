@@ -152,8 +152,7 @@ deploy-awe-client:
 		chmod +x service/$$cli; \
 		cp -p service/$$cli $(SERVICE_DIR)/ ; \
 	done
-	$(TPAGE) $(TPAGE_ARGS) service/monitrc.tt > service/monitrc
-	cp service/monitrc $(SERVICE_DIR)/monitrc
+	-$(TPAGE) $(TPAGE_ARGS) service/monitrc.tt > $(SERVICE_DIR)/monitrc ; \
 	chmod go-rwx $(SERVICE_DIR)/monitrc
 
 deploy-upstart:
