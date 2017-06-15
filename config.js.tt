@@ -11,6 +11,7 @@ var RetinaConfig = {
     		       "KBase": { "icon" : "KBase_favicon.ico",
 		       		  "keyword": "auth",
 				  "url": "[% globus_token_url %]",
+				  "tokenField": "access_token",
 				  "useHeader": false } },
     "mgrast_api": "http://api.metagenomics.anl.gov",
     "authentication": true
