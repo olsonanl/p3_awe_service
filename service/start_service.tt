@@ -26,4 +26,4 @@ fi
     -o $log_dir/awes-start.log \
     -e $log_dir/awes-start.err \
     -p $pid_file \
-    [% kb_top %]/bin/awe-server -conf -recover $awe_config
+    [% kb_top %]/bin/awe-server -recover -conf $awe_config
