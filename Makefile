@@ -18,6 +18,7 @@ MONGO_HOST = localhost
 MONGO_TIMEOUT = 1200
 MONGO_DB = AWEDB_dev
 AWE_DIR = $(shell pwd)/awe-install
+ADMIN_EMAIL = user@example.com
 ADMIN_LIST = 
 
 #
@@ -55,6 +56,7 @@ TPAGE_ARGS = --define kb_top="$(TARGET)" \
     --define globus_token_url="$(GLOBUS_TOKEN_URL)" \
     --define globus_profile_url="$(GLOBUS_PROFILE_URL)" \
     --define client_auth_required="$(CLIENT_AUTH_REQUIRED)" \
+    --define admin_email="$(ADMIN_EMAIL)" \
     --define admin_list="$(ADMIN_LIST)" \
     --define max_work_failure="$(MAX_WORK_FAILURE)" \
     --define max_client_failure="$(MAX_CLIENT_FAILURE)" \
