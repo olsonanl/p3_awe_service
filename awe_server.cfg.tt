@@ -1,5 +1,5 @@
 [Admin]
-email=admin@host.com
+email=[% admin_email %]
 users=[% admin_list %]
 
 [Anonymous]
