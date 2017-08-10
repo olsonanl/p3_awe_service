@@ -7,8 +7,8 @@ SERVICE_DIR = $(TARGET)/services/$(SERVICE)
 AUTO_DEPLOY_CONFIG ?= deploy.cfg
 
 AWE_REPO = https://github.com/MG-RAST/AWE
-AWE_RELEASE_VERSION = v0.9.43
-AWE_RELEASE_URL = $(AWE_REPO)/releases/download/v0.9.43
+AWE_RELEASE_VERSION = v0.9.50
+AWE_RELEASE_URL = $(AWE_REPO)/releases/download/v0.9.50
 
 SERVER_SITE_PORT=8001
 SERVER_API_PORT=8000
@@ -70,11 +70,12 @@ clean:
 	if [ -f $(SERVICE_DIR)/stop_aweclient ]; then $(SERVICE_DIR)/stop_aweclient; fi;
 	-rm -f $(BIN_DIR)/awe-server
 	-rm -f $(BIN_DIR)/awe-client
+	-rm -f $(BIN_DIR)/awe-worker
 	-rm -rf $(SERVICE_DIR)
 	-rm -rf $(AWE_DIR)
 
 
-build-awe: checkout-code $(BIN_DIR)/awe-server $(BIN_DIR)/awe-client
+build-awe: checkout-code $(BIN_DIR)/awe-server $(BIN_DIR)/awe-worker
 
 checkout-code:
 	if [ ! -d AWE ] ; then \
@@ -86,7 +87,7 @@ download/awe-server:
 	curl -o $@ -L $(AWE_RELEASE_URL)/`basename $@`
 	chmod +x $@
 
-download/awe-client:
+download/awe-worker:
 	mkdir -p download
 	curl -o $@ -L $(AWE_RELEASE_URL)/`basename $@`
 	chmod +x $@
@@ -94,7 +95,7 @@ download/awe-client:
 $(BIN_DIR)/awe-server: download/awe-server
 	cp -p $^ $@
 
-$(BIN_DIR)/awe-client: download/awe-client
+$(BIN_DIR)/awe-worker: download/awe-worker
 	cp -p $^ $@
 
 build-libs:
@@ -112,13 +113,13 @@ deploy: deploy-service deploy-client
 deploy-awe-libs:
 	rsync --exclude '*.bak' -arv AWE/utils/lib/. $(TARGET)/lib/.
 
-deploy-client: build-libs deploy-binaries deploy-utils deploy-libs deploy-awe-libs deploy-awe-client
+deploy-client: build-libs deploy-binaries deploy-utils deploy-libs deploy-awe-libs deploy-awe-worker
 
 deploy-service: build-libs deploy-binaries deploy-libs deploy-awe-libs deploy-awe-server
 
 deploy-binaries: build-awe 
 	cp $(BIN_DIR)/awe-server $(TARGET)/bin
-	cp $(BIN_DIR)/awe-client $(TARGET)/bin
+	cp $(BIN_DIR)/awe-worker $(TARGET)/bin
 
 deploy-awe-server: 
 	mkdir -p $(SERVICE_DIR)/conf
@@ -134,7 +135,7 @@ deploy-awe-server:
 	cp service/stop_service $(SERVICE_DIR)/
 	chmod +x $(SERVICE_DIR)/stop_service
 
-deploy-awe-client: 
+deploy-awe-worker: 
 	mkdir -p $(SERVICE_DIR)/conf
 	perl build-client-configs.pl $(TPAGE_ARGS) $(AUTO_DEPLOY_CONFIG) $(SERVICE) $(SERVICE_DIR)/conf awec.%s.cfg
 	for cli in start_awe_client_group stop_awe_client_group; do \
